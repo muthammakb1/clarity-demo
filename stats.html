@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Stats</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Task Stats</h1>
+
+  <div id="stats"></div>
+
+  <a href="index.html">Back</a>
+
+  <script>
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+    let total = tasks.length;
+    let completed = tasks.filter(t => t.done).length;
+
+    document.getElementById("stats").innerHTML = `
+      <p>Total Tasks: ${total}</p>
+      <p>Completed: ${completed}</p>
+      <progress value="${completed}" max="${total || 1}"></progress>
+    `;
+  </script>
+</body>
+</html>
