@@ -19,9 +19,15 @@
   <div id="stats"></div>
 
   <button id="fetchClarityInsightsBtn" type="button">Fetch Clarity Live Insights</button>
+  <button id="showClickTelemetryBtn" type="button">Show Recent Click Targets</button>
+  <button id="exportClickTelemetryBtn" type="button">Export Click Telemetry</button>
+  <button id="clearClickTelemetryBtn" type="button">Clear Click Telemetry</button>
+
+  <pre id="clickTelemetryOutput"></pre>
 
   <a href="index.html">Back</a>
 
+  <script src="telemetry.js"></script>
   <script>
     let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 
@@ -33,6 +39,49 @@
       <p>Completed: ${completed}</p>
       <progress value="${completed}" max="${total || 1}"></progress>
     `;
+
+    function trackClick(buttonName) {
+      console.log("Clicked:", buttonName);
+
+      if (typeof window.clarity === "function") {
+        window.clarity("event", `${buttonName}_click`);
+        window.clarity("set", "last_clicked_button", buttonName);
+      }
+    }
+
+    function showRecentClickTelemetry() {
+      if (!window.appTelemetry) {
+        console.error("Telemetry module not loaded.");
+        return;
+      }
+
+      const events = window.appTelemetry.getEvents();
+      const recent = events.slice(-20).reverse();
+
+      console.log("Recent click telemetry:", recent);
+      document.getElementById("clickTelemetryOutput").textContent = JSON.stringify(recent, null, 2);
+    }
+
+    function clearClickTelemetry() {
+      if (!window.appTelemetry) {
+        console.error("Telemetry module not loaded.");
+        return;
+      }
+
+      window.appTelemetry.clearEvents();
+      document.getElementById("clickTelemetryOutput").textContent = "[]";
+      console.log("Click telemetry cleared.");
+    }
+
+    function exportClickTelemetry() {
+      if (!window.appTelemetry) {
+        console.error("Telemetry module not loaded.");
+        return;
+      }
+
+      const payload = window.appTelemetry.exportEvents();
+      document.getElementById("clickTelemetryOutput").textContent = payload;
+    }
 
     async function fetchClarityLiveInsights() {
       let clarityApiToken = localStorage.getItem("clarityApiToken") || "";
@@ -53,7 +102,8 @@
       const endpoint = "https://www.clarity.ms/export-data/api/v1/project-live-insights";
       const params = new URLSearchParams({
         numOfDays: "1",
-        dimension1: "OS"
+        dimension1: "URL",
+        dimension2: "OS"
       });
 
       try {
@@ -84,7 +134,22 @@
 
     document
       .getElementById("fetchClarityInsightsBtn")
-      .addEventListener("click", fetchClarityLiveInsights);
+      .addEventListener("click", function () {
+        trackClick("fetchClarityInsightsBtn");
+        fetchClarityLiveInsights();
+      });
+
+    document
+      .getElementById("showClickTelemetryBtn")
+      .addEventListener("click", showRecentClickTelemetry);
+
+    document
+      .getElementById("exportClickTelemetryBtn")
+      .addEventListener("click", exportClickTelemetry);
+
+    document
+      .getElementById("clearClickTelemetryBtn")
+      .addEventListener("click", clearClickTelemetry);
   </script>
 </body>
 </html>
