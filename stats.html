@@ -35,13 +35,20 @@
     `;
 
     async function fetchClarityLiveInsights() {
-      // Add your Clarity Data Export API token below.
-      const clarityApiToken = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjQ4M0FCMDhFNUYwRDMxNjdEOTRFMTQ3M0FEQTk2RTcyRDkwRUYwRkYiLCJ0eXAiOiJKV1QifQ.eyJqdGkiOiI2MTdhYWE2OS0yMTEwLTRjYTQtYTM1MS1jM2JkNTZmNzE2NzkiLCJzdWIiOiIzMzUxNzYxMzIwNzA5NjgxIiwic2NvcGUiOiJEYXRhLkV4cG9ydCIsIm5iZiI6MTc4MDMwOTY4MSwiZXhwIjo0OTMzOTA5NjgxLCJpYXQiOjE3ODAzMDk2ODEsImlzcyI6ImNsYXJpdHkiLCJhdWQiOiJjbGFyaXR5LmRhdGEtZXhwb3J0ZXIifQ.iCVpm-eF6N9ltRCtaSWcqnTOQMRtX54XHpZiGe7S2hTmJCDvqGkAeyROcFoapC3_iy3HKelg3cwWrfDJz3oHw_eNoJs8QfX7eQH7efTvLz3TOrx8VsSgAqbczVD8Pa6R3SwXKbLCMTaeND4wv1nTJ-dq4SG06Y3vknzSD5080XJ_4njCATdyzLmdhIu0oFGaDL8ErdWaHQSaYpcQrcop7WSXi2llYa83L0p8EWeDvsWR2dxrMeFBA9YiMFvgx1-503k2z8X6Wsv3cPU4Owzs2o7BeLKClDTJTnPBVheRbiWkaDkQBeITCo3gs9zP3GxGiQYYb5RP50rlAP3ju5UURQ";
+      let clarityApiToken = localStorage.getItem("clarityApiToken") || "";
 
-      if (!clarityApiToken || clarityApiToken === "eyJhbGciOiJSUzI1NiIsImtpZCI6IjQ4M0FCMDhFNUYwRDMxNjdEOTRFMTQ3M0FEQTk2RTcyRDkwRUYwRkYiLCJ0eXAiOiJKV1QifQ.eyJqdGkiOiI2MTdhYWE2OS0yMTEwLTRjYTQtYTM1MS1jM2JkNTZmNzE2NzkiLCJzdWIiOiIzMzUxNzYxMzIwNzA5NjgxIiwic2NvcGUiOiJEYXRhLkV4cG9ydCIsIm5iZiI6MTc4MDMwOTY4MSwiZXhwIjo0OTMzOTA5NjgxLCJpYXQiOjE3ODAzMDk2ODEsImlzcyI6ImNsYXJpdHkiLCJhdWQiOiJjbGFyaXR5LmRhdGEtZXhwb3J0ZXIifQ.iCVpm-eF6N9ltRCtaSWcqnTOQMRtX54XHpZiGe7S2hTmJCDvqGkAeyROcFoapC3_iy3HKelg3cwWrfDJz3oHw_eNoJs8QfX7eQH7efTvLz3TOrx8VsSgAqbczVD8Pa6R3SwXKbLCMTaeND4wv1nTJ-dq4SG06Y3vknzSD5080XJ_4njCATdyzLmdhIu0oFGaDL8ErdWaHQSaYpcQrcop7WSXi2llYa83L0p8EWeDvsWR2dxrMeFBA9YiMFvgx1-503k2z8X6Wsv3cPU4Owzs2o7BeLKClDTJTnPBVheRbiWkaDkQBeITCo3gs9zP3GxGiQYYb5RP50rlAP3ju5UURQ") {
-        console.error("Set your Clarity API token in stats.html before calling the endpoint.");
+      if (!clarityApiToken) {
+        clarityApiToken = window.prompt("Paste your Clarity API token:") || "";
+      }
+
+      clarityApiToken = clarityApiToken.trim();
+
+      if (!clarityApiToken) {
+        console.error("Clarity API token is required to call project-live-insights.");
         return;
       }
+
+      localStorage.setItem("clarityApiToken", clarityApiToken);
 
       const endpoint = "https://www.clarity.ms/export-data/api/v1/project-live-insights";
       const params = new URLSearchParams({
