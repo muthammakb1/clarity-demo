@@ -1,0 +1,556 @@
+/* ============================================================
+   SEO Insights — dashboard redesign
+   Header + Overall Performance banner + metric cards grid.
+   All rules scoped under #seoDetail so nothing else is affected.
+   ============================================================ */
+
+.metric-card--seo {
+    margin-bottom: 16px;
+}
+
+/* ---- Month picker popover (unchanged behaviour) ---- */
+#pageInsightsMain #seo-month-picker {
+    width: 206px !important;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    justify-content: center;
+}
+
+#pageInsightsMain #seo-month-picker select {
+    width: 46%;
+    border: 1px solid gray;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#pageInsightsMain #seo-month-picker button {
+    width: 100%;
+}
+
+/* ============================================================
+   Panel shell
+   ============================================================ */
+#seoDetail {
+    --seo-ink: #1a1a2e;
+    --seo-muted: #6b7280;
+    --seo-line: #e9eaf0;
+    --seo-card-line: #eceef3;
+    --seo-good: #12925a;
+    --seo-good-bg: #e6f6ee;
+    --seo-bad: #d6413d;
+    --seo-bad-bg: #fdeceb;
+    --seo-radius: 16px;
+    color: var(--seo-ink);
+}
+
+#seoDetail .seo-insights-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ---- Header ---- */
+#seoDetail .seo-panel-header {
+    flex-wrap: wrap;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    background: linear-gradient(345.4deg, #ffffff 25.9%, #feefcf 90.95%);
+    border-radius: 22px;
+    padding: 18px 20px;
+    border-bottom: 2px solid #e8e8ef;
+}
+
+#seoDetail .seo-panel-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+#seoDetail .seo-panel-icon {
+    width: 52px;
+    height: 52px;
+    flex: 0 0 auto;
+    border-radius: 14px;
+    background: linear-gradient(150deg, #f6b73c 0%, #f59e0b 100%);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 14px rgba(245, 158, 11, 0.28);
+}
+
+#seoDetail .seo-panel-icon svg {
+    width: 26px;
+    height: 26px;
+}
+
+#seoDetail .seo-panel-title {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+}
+
+#seoDetail .seo-panel-subtitle {
+    font-size: 13px;
+    color: var(--seo-muted);
+    margin-top: 2px;
+}
+
+/* ---- Date picker pill ---- */
+#seoDetail .seo-date-picker {
+    display: inline-flex;
+    /* align-items: center; */
+    gap: 8px;
+    padding: 9px 12px;
+    border: 1px solid var(--seo-line);
+    border-radius: 12px;
+    background: #fff;
+    color: #374151;
+    cursor: pointer;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+#seoDetail .seo-date-picker:hover {
+    border-color: #d4d6e0;
+    box-shadow: 0 2px 8px rgba(20, 20, 40, 0.05);
+}
+
+#seoDetail .seo-date-picker .seo-cal-icon {
+    width: 17px;
+    height: 17px;
+    color: var(--seo-muted);
+    flex: 0 0 auto;
+}
+
+#seoDetail .seo-date-picker .seo-chevron-down {
+    width: 16px;
+    height: 16px;
+    color: var(--seo-muted);
+    flex: 0 0 auto;
+}
+
+#seoDetail #seoDateRangeInput.date-range-input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    width: 96px;
+    padding: 0;
+    cursor: pointer;
+    box-shadow: none;
+}
+
+/* ============================================================
+   Overall performance banner
+   ============================================================ */
+#seoDetail .seo-overall-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: nowrap;
+    padding: 12px;
+    border: 1px solid var(--seo-card-line);
+    border-radius: var(--seo-radius);
+    background: #fafbfc;
+    margin-bottom: 12px;
+}
+
+#seoDetail .seo-overall-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1 1 260px;
+    min-width: 0;
+}
+
+#seoDetail .seo-overall-badge {
+    width: 60px;
+    height: 60px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--seo-good-bg);
+    color: var(--seo-good);
+}
+
+#seoDetail .seo-overall-badge.is-bad {
+    background: var(--seo-bad-bg);
+    color: var(--seo-bad);
+}
+
+#seoDetail .seo-overall-badge.is-neutral {
+    background: #eef0f4;
+    color: var(--seo-muted);
+}
+
+#seoDetail .seo-overall-badge svg {
+    width: 28px;
+    height: 28px;
+}
+
+#seoDetail .seo-overall-label {
+    font-size: 14px;
+    color: #4b5563;
+    font-weight: 500;
+}
+
+#seoDetail .seo-overall-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 25px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin: 2px 0 3px;
+    color: var(--seo-good);
+}
+
+#seoDetail .seo-overall-status.is-bad {
+    color: var(--seo-bad);
+}
+
+#seoDetail .seo-overall-status.is-neutral {
+    color: #4b5563;
+}
+
+#seoDetail .seo-overall-status svg {
+    width: 22px;
+    height: 22px;
+}
+
+#seoDetail .seo-overall-compare {
+    font-size: 14px;
+    color: var(--seo-muted);
+}
+
+#seoDetail .seo-overall-stats {
+    display: flex;
+    align-items: stretch;
+    gap: 22px;
+    flex: 0 0 auto;
+    border-left: 1px solid var(--seo-line);
+    padding-left: 22px;
+}
+
+#seoDetail .seo-overall-stat {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#seoDetail .seo-overall-stat + .seo-overall-stat {
+    border-left: 1px solid var(--seo-line);
+    padding-left: 22px;
+}
+
+#seoDetail .seo-stat-circle {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#seoDetail .seo-stat-circle.is-up {
+    background: var(--seo-good-bg);
+    color: var(--seo-good);
+}
+
+#seoDetail .seo-stat-circle.is-down {
+    background: var(--seo-bad-bg);
+    color: var(--seo-bad);
+}
+
+#seoDetail .seo-stat-circle svg {
+    width: 20px;
+    height: 20px;
+}
+
+#seoDetail .seo-stat-count {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+#seoDetail .seo-stat-circle.is-up + .seo-stat-body .seo-stat-count {
+    color: var(--seo-good);
+}
+
+#seoDetail .seo-stat-circle.is-down + .seo-stat-body .seo-stat-count {
+    color: var(--seo-bad);
+}
+
+#seoDetail .seo-stat-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+#seoDetail .seo-stat-sub {
+    font-size: 12px;
+    color: var(--seo-muted);
+}
+
+/* ============================================================
+   Metric cards grid
+   ============================================================ */
+/* Content is a container so the grid can respond to the panel's own width
+   (works inside a narrow sidebar as well as a wide panel). */
+#seoDetail #seoInsightsContent {
+    container-type: inline-size;
+    container-name: seopanel;
+        display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+#seoDetail .seo-metric-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+/* Collapse to a single column when the panel itself is narrow. */
+@container seopanel (max-width: 620px) {
+    #seoDetail .seo-metric-grid {
+        grid-template-columns: 1fr;
+    }
+    #seoDetail .seo-overall-stats {
+        border-left: none;
+        padding-left: 0;
+        width: 100%;
+    }
+}
+
+#seoDetail .seo-metric-card {
+    border: 1px solid var(--seo-card-line);
+    border-radius: var(--seo-radius);
+    background: #fff;
+    padding:10px 12px;
+    min-width: 0;
+    transition: box-shadow .15s ease, transform .15s ease;
+}
+
+#seoDetail .seo-metric-card:hover {
+    box-shadow: 0 6px 18px rgba(20, 20, 40, 0.06);
+}
+
+#seoDetail .seo-mc-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+#seoDetail .seo-mc-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+#seoDetail .seo-mc-icon {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#seoDetail .seo-mc-icon svg {
+    width: 19px;
+    height: 19px;
+}
+
+#seoDetail .seo-icon--clicks {
+    background: #e8effe;
+    color: #3b82f6;
+}
+
+#seoDetail .seo-icon--impressions {
+    background: #efe9fb;
+    color: #7c3aed;
+}
+
+#seoDetail .seo-icon--ctr {
+    background: #fdf1d7;
+    color: #f59e0b;
+}
+
+#seoDetail .seo-icon--position {
+    background: var(--seo-good-bg);
+    color: #16a34a;
+}
+
+#seoDetail .seo-mc-name {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+#seoDetail .seo-mc-sub {
+    font-size: 12px;
+    color: var(--seo-muted);
+    margin-top: 1px;
+}
+
+#seoDetail .seo-mc-status {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex: 0 0 auto;
+    text-align: right;
+}
+
+/* status badge */
+#seoDetail .seo-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: #eef0f4;
+    color: var(--seo-muted);
+    white-space: nowrap;
+}
+
+#seoDetail .seo-badge.is-good {
+    background: var(--seo-good-bg);
+    color: var(--seo-good);
+}
+
+#seoDetail .seo-badge.is-bad {
+    background: var(--seo-bad-bg);
+    color: var(--seo-bad);
+}
+
+/* percentage change (top-right) */
+#seoDetail .seo-mc-pct {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--seo-muted);
+    white-space: nowrap;
+}
+
+#seoDetail .seo-mc-pct.is-good {
+    color: var(--seo-good);
+}
+
+#seoDetail .seo-mc-pct.is-bad {
+    color: var(--seo-bad);
+}
+
+/* big value */
+#seoDetail .seo-mc-value {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 5px 0 5px;
+    color: #111827;
+}
+
+/* delta vs last month */
+#seoDetail .seo-mc-delta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--seo-muted);
+}
+
+#seoDetail .seo-mc-delta.is-good {
+    color: var(--seo-good);
+}
+
+#seoDetail .seo-mc-delta.is-bad {
+    color: var(--seo-bad);
+}
+
+/* previous value */
+#seoDetail .seo-mc-prev {
+    font-size: 14px;
+    color: var(--seo-muted);
+    margin-top: 8px;
+}
+
+/* shared chevron used inside pct / delta */
+#seoDetail .seo-chevron {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 auto;
+}
+
+/* ============================================================
+   Footer note
+   ============================================================ */
+#seoDetail .seo-footer-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--seo-muted);
+    padding-top: 4px;
+    border-top: 1px solid var(--seo-line);
+    padding: 12px 4px 0;
+}
+
+#seoDetail .seo-footer-note svg {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
+    color: #9ca3af;
+}
+
+/* ============================================================
+   States
+   ============================================================ */
+#seoDetailBody.is-loading {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+#seoDetail #seoNoDataMsg {
+    padding: 24px;
+    text-align: center;
+    color: var(--seo-muted);
+    font-size: 14px;
+}
+
+/* Fallback for browsers without container-query support + very small viewports */
+@media (max-width: 620px) {
+    #seoDetail .seo-metric-grid {
+        grid-template-columns: 1fr;
+    }
+    #seoDetail .seo-overall-stats {
+        border-left: none;
+        padding-left: 0;
+        width: 100%;
+    }
+}
+
+@media (max-width: 420px) {
+    #seoDetail .seo-mc-value {
+        font-size: 32px;
+    }
+}
