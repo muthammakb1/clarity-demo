@@ -1,0 +1,50 @@
+Use a soft, layered shadow on the white pills and a slightly deeper shadow on the selected pill. Replace .colour-pill with your existing button class.
+
+/* Default pill */
+.colour-pill {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 999px;
+
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.03),
+    0 6px 14px rgba(0, 0, 0, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
+  transition: box-shadow 200ms ease;
+}
+
+/* Hover */
+.colour-pill:hover {
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.04),
+    0 8px 18px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Selected pill — e.g. Off Whites */
+.colour-pill.active,
+.colour-pill[aria-pressed="true"] {
+  background: linear-gradient(180deg, #383838 0%, #262626 100%);
+  color: #ffffff;
+  border-color: rgba(0, 0, 0, 0.12);
+
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    0 6px 14px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* Keyboard focus */
+.colour-pill:focus-visible {
+  outline: 2px solid #52657a;
+  outline-offset: 3px;
+}
+
+For just the shadow, without changing any existing colours or styling, use:
+
+box-shadow:
+  0 2px 4px rgba(0, 0, 0, 0.03),
+  0 6px 14px rgba(0, 0, 0, 0.07);
+
+Give the parent row approximately 12px of vertical padding and 8–10px between pills so the shadows have room to show.
