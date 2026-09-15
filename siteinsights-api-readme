@@ -1,0 +1,152 @@
+API DATA
+===================================================================
+
+1. Auth token generator
+	POST: https://ims-na1.adobelogin.com/ims/token/v3
+	Body:
+	grant_type    : client_credentials
+	client_id     : 46a17c46b085473dbddd83ace16ef177
+	client_secret : p8e-gEKQTXhpjOdAVp4UXety-IlY9B_OZTao
+	scope         : openid,AdobeID,additional_info.projectedProductContext
+
+2. Sight Insights API
+	POST: https://analytics.adobe.io/api/asianp1/reports
+	Headers:
+	Authorization              : Bearer (token generated from Auth Token Generator
+	x-api-key                  : 46a17c46b085473dbddd83ace16ef177
+	x-proxy-global-company-id  : asianp1
+	Content-Type               : application/json
+	
+headers:
+	{
+  "rsid": "apaintasrpprod",
+  "globalFilters": [
+    {
+      "type": "dateRange",
+      "dateRange": "2026-06-01T00:00:00.000/2026-06-30T23:59:59.999"
+    }
+  ],
+  "metricContainer": {
+    "metrics": [
+      { "id": "metrics/pageviews" },
+      { "id": "metrics/visitors" },
+      { "id": "metrics/visits" },
+      { "id": "metrics/entries" },
+      { "id": "metrics/exits" },
+      { "id": "metrics/bounces" },
+      { "id": "metrics/event9" },
+      { "id": "metrics/event132" },
+      { "id": "metrics/timespentvisit" },
+      { "id": "metrics/timespentvisitor" },
+      { "id": "metrics/visits", "filters": ["seg_mobile_phone_id"], "name": "Mobile Visits (Mobile Phone)" },
+      { "id": "metrics/visits", "filters": ["seg_nonmobile_id"], "name": "Non-Mobile Visits (Not Mobile Phone)" },
+      { "id": "metrics/event143", "filters": ["FAQs_click"], "name": "Overall FAQs Click" },
+      { "id": "metrics/event136", "name": "Campaign FAQ Click" },
+      { "id": "metrics/event134", "name": "Download Click" },
+      { "id": "metrics/event20", "name": "Video played" },
+      { "id": "metrics/event301" },
+      { "id": "metrics/event48" },
+      { "id": "metrics/event48", "filters": ["seg_mobile_phone"], "name": "Mobile Logins(Mobile Phone)" },
+      { "id": "metrics/event48", "filters": ["seg_nonmobile"], "name": "Non-Mobile Logins (Not Mobile Phone)" }
+    ],
+    "metricFilters": [
+      {
+        "id": "seg_mobile_phone_id",
+        "type": "segment",
+        "segmentId": "s200000889_69660e058d4296479e9be08d"
+      },
+      {
+        "id": "seg_nonmobile_id",
+        "type": "segment",
+        "segmentId": "s200000889_69660e1ea6005a2f7804f32b"
+      },
+      {
+        "id": "seg_mobile_phone",
+        "type": "segment",
+        "segmentId": "s200000889_6a4b4df559314d1f94172735"
+      },
+      {
+        "id": "seg_nonmobile",
+        "type": "segment",
+        "segmentId": "s200000889_6a4b4e429879a70c95e90d03"
+      },
+      {
+        "id": "FAQs_click",
+        "type": "segment",
+        "segmentId": "s200000889_697327318864ef5c3c4f79f7"
+      }
+    ]
+  }
+}
+
+
+
+
+EXECUTIVE SUMMARY
+====================================================================
+
+1. Visits
+	Total number of users visiting the website
+	API metrics - metrics/visits
+
+2. Unique Visitors
+	Total number of new visitors to the website
+	API metrics - metrics/visitors
+
+3. Leads 
+	Total number of form fills
+	API metrics - metrics/event9
+
+4. Conversion Rate
+	Total number of form fills against total visits
+	API metrics - (metrics/event9)  /  (metrics/visits)
+
+5. Leads 
+	Total number of form fills
+	API metrics - metrics/event9
+
+6. Bounce Rate 
+	Total number of form fills
+	API metrics - (metrics/bounces) / (metrics/entries)
+
+7. Avg. Engagement Time 
+	Total avg duration spent by all users visiting the website
+	API metrics - metrics/timespentvisitor
+
+8. Login data 
+	Total number of login by users visiting the website
+        API metrics total login - metrics/event48
+	API metrics Mobile users - { "id": "metrics/event48", "filters": ["seg_mobile_phone"], "name": "Mobile Logins(Mobile Phone)" }
+	API metrics Non-Mobile users - { "id": "metrics/event48", "filters": ["seg_nonmobile"], "name": "Non-Mobile Logins (Not Mobile Phone)" }
+
+8. App downloads
+	Total number of users who downloaded the app in mobile device.
+	API metrics - 
+
+
+
+
+TRAFFIC OVERVIEW
+====================================================================
+1. Visits
+	Total number of users visiting the website
+	API metrics - metrics/visits
+
+2. Unique Visitors
+	Total number of new visitors to the website
+	API metrics - metrics/visitors
+
+3. New Visitors
+	Total number of visitors coming to the website for the 1st time
+
+4. Returning Visitors
+	Total number of visitors coming to the website for more than once
+
+
+5. Pages / Session
+	Avg of Total number of pages the user visits in a single session. If a user is inactive for 30m a session would expire and a new session starts.
+	
+
+6. Bounce Rate
+	The percentage of single-page website sessions where a user leaves without interacting or visiting another page.
+	API metric - (metrics/bounces) / (metrics/entries)
