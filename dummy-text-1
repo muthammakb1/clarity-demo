@@ -1,50 +1,133 @@
-Use a soft, layered shadow on the white pills and a slightly deeper shadow on the selected pill. Replace .colour-pill with your existing button class.
+var checkAllElementInterval = setInterval(function () {
+    let formElement = document.querySelector(".ccforms.blog-details-right-ccforms-wp.aem-GridColumn.aem-GridColumn--default--4");
+    if (formElement) {
+        if ($(window).width() > 991) {
+            formElement.style.position = "sticky";
+            formElement.style.top = "72px";
+            formElement.style.zIndex  = "1060";
+        }
+    }
 
-/* Default pill */
-.colour-pill {
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  border-radius: 999px;
+	document.querySelectorAll(
+  '.blog-details-right-ccforms-wp .formVerticalVariant .form-revamp-vertical .form-global-revamp .form-text-input__field'
+).forEach(el => {
+  el.style.setProperty('height', '40px', 'important');
+});
 
-  box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.03),
-    0 6px 14px rgba(0, 0, 0, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+document.querySelectorAll(
+  '.blog-details-right-ccforms-wp .formVerticalVariant.vertical-whitevariant.white-landingPageClosedForm .formVerticalVariantContainer'
+).forEach(el => {
+  el.style.setProperty('width', '300px', 'important');
+  el.style.setProperty('padding', '6px 4%', 'important');
+  el.style.setProperty('border-radius', '0', 'important');
+  el.style.setProperty('border', '1px solid #e5e3e7', 'important');
+});
 
-  transition: box-shadow 200ms ease;
-}
+document.querySelectorAll(
+  '.blog-details-right-ccforms-wp .formVerticalVariant.vertical-whitevariant.white-landingPageClosedForm .formVerticalVariantContainer .formVerticalLeft .formVerticalLeftContent .formVerticalLeftPara'
+).forEach(el => {
+  el.style.setProperty('padding', '8px 1%', 'important');
+});
 
-/* Hover */
-.colour-pill:hover {
-  box-shadow:
-    0 3px 6px rgba(0, 0, 0, 0.04),
-    0 8px 18px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
+document.querySelectorAll('.blog-details-right-ccforms-wp').forEach(el => {
+  el.style.setProperty('border', '0', 'important');
+  el.style.setProperty('transform', 'scale(0.9)', 'important');
+});
+    // ----------sticky code end ------///////
 
-/* Selected pill — e.g. Off Whites */
-.colour-pill.active,
-.colour-pill[aria-pressed="true"] {
-  background: linear-gradient(180deg, #383838 0%, #262626 100%);
-  color: #ffffff;
-  border-color: rgba(0, 0, 0, 0.12);
+    var popularSectionInterval = setInterval(function () {
+        let popularSection = document.querySelector(".popular-this-week");
+        let targetSection = document.querySelectorAll(".blog-details-full-width-layout-wrapper")[1];
+        let popularHeading = document.querySelector(".popular-this-week h4")
+        if (popularSection && targetSection) {
+            targetSection.appendChild(popularSection);
 
-  box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.08),
-    0 6px 14px rgba(0, 0, 0, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
+            let titleContainer = document.createElement("div");
+            titleContainer.style.cssText = "display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: -15px;";
 
-/* Keyboard focus */
-.colour-pill:focus-visible {
-  outline: 2px solid #52657a;
-  outline-offset: 3px;
-}
+            if (popularHeading) {
+                popularHeading.style.cssText = "font-size: 14px; font-weight: bold; color: #222; margin: 0;";
+                titleContainer.appendChild(popularHeading);
+            }
 
-For just the shadow, without changing any existing colours or styling, use:
+            let viewMoreLink = document.createElement("a");
+            viewMoreLink.id = "viewMore";
+            viewMoreLink.href = "https://www.asianpaints.com/blogs.html";
+            viewMoreLink.setAttribute("target", "_blank")
+            viewMoreLink.innerText = "VIEW MORE";
+            viewMoreLink.style.cssText = "font-size: 12px; font-weight: bold; text-decoration: underline; color: #000; cursor: pointer; margin-right: 2%;";
 
-box-shadow:
-  0 2px 4px rgba(0, 0, 0, 0.03),
-  0 6px 14px rgba(0, 0, 0, 0.07);
+            titleContainer.appendChild(viewMoreLink);
+            popularSection.prepend(titleContainer);
 
-Give the parent row approximately 12px of vertical padding and 8–10px between pills so the shadows have room to show.
+            popularSection.style.cssText = "display: flex; flex-direction: column; align-items: center; position: relative; padding: 35px 20px 30px; margin: 1% 27%; width: 46%; border: none;";
+
+            clearInterval(popularSectionInterval);
+        }
+    })
+
+
+
+    let popularContentWrap = document.querySelector(".popular-this-week--contentWrap");
+    if (popularContentWrap) {
+        popularContentWrap.style.cssText = "display: flex; flex-direction: row; gap: 5px; overflow-x: auto; white-space: nowrap; ";
+    }
+
+    document.querySelectorAll(".popular-this-week--contentWrap > a").forEach(item => {
+        item.style.cssText = "display: flex; flex-direction: column; align-items: center; text-align: center; gap: 5px; margin-bottom: unset !important;border-bottom:none !important";
+    });
+
+    document.querySelectorAll(".popular-this-week--contentText").forEach(textItem => {
+        textItem.style.cssText = "margin-top: 5px; font-size: 14px; color: #222; width: 100%; overflow-wrap: break-word; text-align: left; display: block; white-space: normal;";
+    });
+
+    document.querySelectorAll(".popular-this-week--contentText > p").forEach(textItem => {
+        textItem.style.fontSize = "11px";
+    });
+    document.querySelectorAll(".popular-this-week--contentWrap__content  p")[1].style.marginLeft = "3%";
+
+    document.querySelectorAll(".popular-this-week--image img").forEach(image => {
+        let originalUrl = image.src;
+        let cleanUrl = originalUrl.split(".png")[0];
+        image.src = cleanUrl;
+        image.style.cssText = "object-fit: cover; border-radius: 1px; width: 230px; height: 220px;";
+    });
+
+
+    var viewMoreInterval = setInterval(function () {
+        if (document.querySelector("body > div.root.responsivegrid.cc-global > div > div.responsivegrid.padding-bottom-medium70.blog-details-page-wrapper.aem-GridColumn.aem-GridColumn--default--12 > div > div:nth-child(2) > div.popular-this-week > div:nth-child(1) > a")) {
+            let viewMode = document.querySelector("body > div.root.responsivegrid.cc-global > div > div.responsivegrid.padding-bottom-medium70.blog-details-page-wrapper.aem-GridColumn.aem-GridColumn--default--12 > div > div:nth-child(2) > div.popular-this-week > div:nth-child(1) > a");
+            let popular = document.querySelector("body > div.root.responsivegrid.cc-global > div > div.responsivegrid.padding-bottom-medium70.blog-details-page-wrapper.aem-GridColumn.aem-GridColumn--default--12 > div > div:nth-child(2) > div.popular-this-week > h4");
+
+            viewMode.insertAdjacentElement("beforebegin", popular);
+            clearInterval(viewMoreInterval);
+        }
+    })
+
+    var veiemorebottomcta = setInterval(function () {
+        if (document.querySelector(".popular-this-week .linkBtn")) {
+            document.querySelector(".popular-this-week .linkBtn").style.display = "none";
+            clearInterval(veiemorebottomcta);
+        }
+    })
+
+
+
+    document.querySelectorAll(".popular-this-week--image picture").forEach(picture => {
+        let imgSource = picture.querySelector("img") || picture.querySelector("source");
+        if (imgSource) {
+            let originalSrc = imgSource.getAttribute("src") || imgSource.getAttribute("srcset");
+            let cleanSrc = originalSrc.split(".png")[0];
+            let newImg = document.createElement("img");
+            newImg.src = cleanSrc;
+            newImg.alt = imgSource.getAttribute("alt") || "Popular Image";
+            newImg.title = imgSource.getAttribute("title") || "Popular Image";
+            newImg.style.width = "200px";
+            newImg.style.height = "auto";
+            newImg.style.objectFit = "cover";
+            newImg.style.borderRadius = "1px";
+            picture.parentNode.replaceChild(newImg, picture);
+        }
+    });
+    clearInterval(checkAllElementInterval);
+});
