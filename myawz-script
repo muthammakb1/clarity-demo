@@ -1,0 +1,678 @@
+/**
+ * Gift Tracking widget
+ * ---------------------------------------------------------
+ * Renders the "Gift Tracking" card list (financial year / month
+ * filters, search, per-gift progress timeline) inside the
+ * <app-featured-products></app-featured-products> host element.
+ *
+ * Data source: RAW_ROWS below is a pre-filtered slice of the master
+ * CSV — only the rows whose Column T (Contractor/Dealer code) is
+ * 251138 or 544513, embedded directly (no network fetch, so this
+ * isn't affected by the page's CSP connect-src restriction). Each
+ * row keeps the CSV's original column order/positions.
+ *
+ * At render time the script reads the logged-in dealer's code from
+ * #currentDealerCode, strips its leading zeros, and keeps only the
+ * RAW_ROWS rows whose Column T matches. From each matching row:
+ *   Column B  (PR Month)              -> card date
+ *   Column D  (Request ID)            -> gift ID
+ *   Column I  (Scheme Name)           -> scheme
+ *   Column P  (Product Title/ Gift)   -> card title
+ * Timeline (gt-timeline), each stage "done" only if its column has a
+ * value on that row:
+ *   Column AB (RM approval date)      -> Approved
+ *   Column AC (PO Date)               -> PO Raised
+ *   Column AG (Dispatch date)         -> Dispatched
+ *   Column AI (Dispatch/ Delivery Status) -> Delivered (done only when
+ *     the status text itself indicates delivery, e.g. "Delivered" or
+ *     "Delivered post re-attempt")
+ * "Last updated" stamp and the filter dropdown values still stay
+ * hardcoded for now.
+ *
+ * To go back to fetching the full CSV live once CSP allows it, swap
+ * loadGifts()'s use of RAW_ROWS for a fetch()+parseCSV() call again
+ * (parseCSV is still included below, unused, for that purpose).
+ *
+ * Drop this into console.js as-is. It is self-contained (styles +
+ * markup + behaviour) and waits for both <app-featured-products> and
+ * #currentDealerCode to exist in the DOM before rendering, so it is
+ * safe to load before Angular has finished bootstrapping.
+ */
+(function () {
+  'use strict';
+
+  var HOST_SELECTOR = 'app-featured-products';
+  var DEALER_CODE_ELEMENT_ID = 'currentDealerCode';
+  var CSV_URL = 'https://www.asianpaints.com/content/dam/target/target.csv'; // unused while RAW_ROWS is embedded; kept for the fetch()+parseCSV() path
+  var STYLE_ID = 'gift-tracking-widget-styles';
+  var VISIBLE_COUNT = 4;
+
+  // Column letter -> 0-based index (A=0, B=1, C=2 ...)
+  var COL = {
+    PR_YEAR: 0,           // A:  PR Year                    -> Financial Year filter key
+    DATE: 1,             // B:  PR Month                   -> gt-card-date
+    GIFT_ID: 3,           // D:  Request ID                 -> gt-card-id
+    SCHEME: 8,            // I:  Scheme Name                -> gt-scheme
+    TITLE: 15,            // P:  Product Title/ Gift        -> gt-card-title
+    DEALER: 19,           // T:  Contractor/Dealer code     -> filter key
+    RM_APPROVAL_DATE: 27, // AB: RM approval date           -> Approved step
+    PO_DATE: 28,          // AC: PO Date                    -> PO Raised step
+    DISPATCH_DATE: 32,    // AG: Dispatch date               -> Dispatched step
+    DELIVERY_STATUS: 34   // AI: Dispatch/ Delivery Status   -> Delivered step
+  };
+
+  var LAST_UPDATED = '01 Sep 2026';
+
+  // ---------------------------------------------------------------
+  // Embedded data: target.csv rows filtered to Column T (Contractor/
+  // Dealer code) == 251138 or 544513, in original CSV column order.
+  // Same 61-column layout as the full file, so the COL indices above
+  // still apply. Regenerate this by re-running the same filter over
+  // a fresh export of target.csv whenever the source data changes.
+  // ---------------------------------------------------------------
+  var RAW_ROWS = [
+    ["25-26", "Aug-25", "AP_LOT_2808740010_4183EGCPL CONSULTANTS PRIVATE LIMITED", 2808740010, 28087400, "MARKETING 1", "OTC", "KIMAYA DEVNALLY", "Asian Paints Ltd The Luxury Indulgence", "7/15/2025", "8/31/2025", "2025-26", "CONSUMERS", "UNIT HEAD", "No", "Usha Dry Iron 750W EI 4175M", "USHA", "PRODUCT", 15, "544513", "BASHA AGENCIES", "APL , SY No 324/1 D.No 4-2-40/9 , GNT Road , Opp BPCL Petrol Bunk Kovvuru - 534350 West Godavari (Dist.)", "", "9884160201", "8/2/2025", "8/2/2025", "8/2/2025", "8/4/2025", "8/5/2025", "Aug-25", 11235259, "AP_LOT_2808740010_4183", "8/23/2025", "9/1/2025", "Delivered", " Delhivery ", "288859822", " Case successfully delivered within the first attempt ", " -   ", "JPR390", "EGCPL CONSULTANTS PRIVATE LIMITED", " -   ", " -   ", " 2 ", " 1 ", " 18 ", " 9 ", " 30 ", "", "", "", "", "", "", "", "", "", "", "", "X", "Delivered"],
+    ["25-26", "Aug-25", "AP_LOT_2808740010_3300EGCPL CONSULTANTS PRIVATE LIMITED", 2808740010, 28087400, "MARKETING 1", "OTC", "KIMAYA DEVNALLY", "Asian Paints Ltd The Luxury Indulgence", "7/15/2025", "8/31/2025", "2025-26", "CONSUMERS", "UNIT HEAD", "No", "Usha Dry Iron 750W EI 4175M", "USHA", "PRODUCT", 28, "251138", "BASHEERA HARDWARES & ELECTRICALS", "AsianPaintsLtd,No.10 Parivakkam Village,Parivakkam Road,Chennai-600056", "", "9962246462", "8/2/2025", "8/2/2025", "8/2/2025", "8/4/2025", "8/5/2025", "Aug-25", 11235259, "AP_LOT_2808740010_3300", "9/5/2025", "9/9/2025", "Delivered", " Delhivery ", "288859977", " Case successfully delivered within the first attempt ", " -   ", "JPR390", "EGCPL CONSULTANTS PRIVATE LIMITED", " -   ", " -   ", " 2 ", " 1 ", " 31 ", " 4 ", " 38 ", "", "", "", "", "", "", "", "", "", "", "", "X", "Delivered"],
+    ["26-27", "May-26", "AP_LOT_2825118610_19EGCPL CONSULTANTS PRIVATE LIMITED", 2825118610, 28251186, "TN NORTH", "SOUTH 1", "LOGESHWARI G", "Advanced 2X Multiplier Dhamaka", "3/1/2026", "3/26/2026", "2025-26", "DEALERS", "CUSTOMER DOOR", "No", "Safari Cabin Genius Alley 55cm Trolley Bag ", "Safari", "PRODUCT", 2, "251138", "BASHEERA HARDWARES & ELECTRICALS", "No.82-H, BHARATHI NAGAR,,REDHILLS ROAD,AMBATTUR, CHENNAI", "", "9840178678", "5/2/2026", "5/2/2026", "5/8/2026", "5/9/2026", "5/20/2026", "May-26", 15455533, "AP_LOT_2825118610_19", "6/3/2026", "6/8/2026", "Delivered", " DELHIVERY ", "305377443", "", " -   ", "JPR390", "EGCPL CONSULTANTS PRIVATE LIMITED", " 37 ", " 6 ", " 1 ", " 11 ", " 14 ", " 5 ", " 37 ", "", "", "", "", "", "", "", "", "", "", "Reopened Twice ,No Quotes Received ", "X", "DELIVERED"],
+    ["25-26", "Jun-25", "AP/Lot 2806262010 /2588KREATIVE SOLUTIONS", 2806262010, 28062620, "MARKETING 1", "HO & OTHERS", "Pushpanjali Sharma", "Elite Nights April 25", "4/1/2025", "4/30/2025", "2025-26", "DEALERS", "CUSTOMER DOOR", "No", "Haier 32inch LED LE32A7", "Haier", "PRODUCT", 1, "544513", "M/S BASHA AGENCIES", "15/140/2,PADAMATIPALEM RO MOGALTURU near police station,Mogaltur ", "", "8184892994", "6/16/2025", "6/30/2025", "6/30/2025", "7/1/2025", "7/3/2025", "Jul-25", 15424857, "AP/Lot 2806262010 /2588", "7/26/2025", "8/15/2025", "Delivered post re-attempt", " Xpressbees ", "94575550100083", " -   ", " -   ", "DMN508", "KREATIVE SOLUTIONS", " 61 ", " -   ", " 1 ", " 2 ", " 23 ", " 20 ", " 46 ", "", "", "", "", "", "", "", "", "", "", "", "X", ""],
+    ["25-26", "Feb-26", "AP/Lot 2819225610 /17KREATIVE SOLUTIONS", 2819225610, 28192256, "TN NORTH", "SOUTH 1", "LOGESHWARI G", "EMULSIONS PARISU MAZHAI", "1/1/2026", "1/13/2026", "2025-26", "DEALERS", "CUSTOMER DOOR", "No", "American Tourister Sprint plus 75cm Hard Luggage ", "American Tourister", "PRODUCT", 1, "251138", "M/S BASHEERA HARDWARES & ELECTRICALS", "No.82-H, BHARATHI NAGAR, , REDHILLS ROAD , AMBATTUR, CHENNAI , CHENNAI", "", "9840178678", "1/29/2026", "2/6/2026", "2/6/2026", "2/6/2026", "2/12/2026", "Feb-26", 15443056, "AP/Lot 2819225610 /17", "2/23/2026", "3/2/2026", "Delivered post re-attempt", " DTDC ", "D1011229868", " -   ", " -   ", "DMN508", "KREATIVE SOLUTIONS", " 24 ", " -   ", " -   ", " 6 ", " 11 ", " 7 ", " 24 ", "", "", "", "", "", "", "", "", "", "", "", "X", ""],
+    ["25-26", "Sep-25", "AP-LOT-2811362710-531METROPOL CORPORATE SOLUTIONS PRIVAT", 2811362710, 28113627, "AP", "SOUTH 2", "CHIDANANDA SAI GORTY", "Eco Emulsions Festive Scheme Aug", "8/1/2025", "8/29/2025", "2025-26", "DEALERS", "CUSTOMER DOOR", "No", "Safari Omega spacious large laptop backpack", "Safari", "PRODUCT", 2, "544513", "BASHA AGENCIES", "Basha Traders,Iron Hardware & Genl Mer.,Near Gandhi Statue Centre,   Mogalturu", "", "8184892994", "9/17/2025", "9/17/2025", "9/18/2025", "9/18/2025", "10/8/2025", "Oct-25", 15432052, "AP-LOT-2811362710-531", "10/15/2025", "10/19/2025", "Delivered", " Delhivery ", "3113221892392", " -   ", " -   ", "YMPDLP", "METROPOL CORPORATE SOLUTIONS PRIVAT", " 19 ", " 1 ", " -   ", " 20 ", " 7 ", " 4 ", " 32 ", "", "", "", "", "", "", "", "", "", "", "", "X", ""],
+    ["25-26", "Feb-26", "AP-LOT-2819180810-44METROPOL CORPORATE SOLUTIONS PRIVAT", 2819180810, 28191808, "TN NORTH", "SOUTH 1", "LOGESHWARI G", " EMULSIONS PARISU MAZHAI", "1/1/2026", "1/13/2026", "2025-26", "DEALERS", "CUSTOMER DOOR", "No", "Noise Pulse 4 Max Smart Watch", "Noise", "PRODUCT", 1, "251138", "BASHEERA HARDWARES & ELECTRICALS", "No.82-H, BHARATHI NAGAR, REDHILLS ROAD AMBATTUR, CHENNAI Thiruvarur District", "", "9840178678", "1/29/2026", "2/6/2026", "2/6/2026", "2/6/2026", "2/12/2026", "Feb-26", 15443057, "AP-LOT-2819180810-44", "3/9/2026", "3/15/2026", "Delivered", " Delhivery ", "6250815526253", "", " -   ", "YMPDLP", "METROPOL CORPORATE SOLUTIONS PRIVAT", " 24 ", " -   ", " -   ", " 6 ", " 25 ", " 6 ", " 37 ", "", "", "", "", "", "", "", "", "", "", "", "X", ""]
+  ];
+
+  // Data populated at render time by filtering RAW_ROWS against the
+  // logged-in dealer's code (see loadGifts below). Shape kept
+  // identical to what buildCard/buildSteps expect.
+  var GIFTS = [];
+
+  // Dealer code from the DOM, resolved once and reused whenever the
+  // Financial Year filter changes and the list needs re-filtering
+  // without waiting on #currentDealerCode again.
+  var currentDealerCode = '';
+
+  // ---------------------------------------------------------------
+  // Financial Year options: current FY (Apr-Mar) plus the 2 before
+  // it, derived from today's date — always 3 options, newest last.
+  // Values are in the CSV's "25-26" format (Column A / PR Year);
+  // labels match the "2025 -2026" display format used in the UI.
+  // ---------------------------------------------------------------
+  function twoDigit(n) {
+    return (n % 100 < 10 ? '0' : '') + (n % 100);
+  }
+
+  function fyOption(startYear) {
+    return {
+      value: twoDigit(startYear) + '-' + twoDigit(startYear + 1),
+      label: startYear + ' -' + (startYear + 1)
+    };
+  }
+
+  function buildFyOptions() {
+    var today = new Date();
+    var currentStart = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1; // FY = Apr-Mar
+    return [fyOption(currentStart - 2), fyOption(currentStart - 1), fyOption(currentStart)];
+  }
+
+  var FY_OPTIONS = buildFyOptions();
+  var selectedFY = FY_OPTIONS[FY_OPTIONS.length - 1].value; // default: current FY
+
+  // ---------------------------------------------------------------
+  // Month options, in financial-year order (Apr through Mar), for
+  // the Month filter grid. "abbr" matches the abbreviation Column B
+  // (PR Month, e.g. "Aug-25") starts with; "full" is the trigger's
+  // display label (matching the original "March" style).
+  // ---------------------------------------------------------------
+  var MONTH_OPTIONS = [
+    { abbr: 'Apr', full: 'April' },
+    { abbr: 'May', full: 'May' },
+    { abbr: 'Jun', full: 'June' },
+    { abbr: 'Jul', full: 'July' },
+    { abbr: 'Aug', full: 'August' },
+    { abbr: 'Sep', full: 'September' },
+    { abbr: 'Oct', full: 'October' },
+    { abbr: 'Nov', full: 'November' },
+    { abbr: 'Dec', full: 'December' },
+    { abbr: 'Jan', full: 'January' },
+    { abbr: 'Feb', full: 'February' },
+    { abbr: 'Mar', full: 'March' }
+  ];
+
+  function currentMonthAbbr() {
+    var abbrs = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return abbrs[new Date().getMonth()];
+  }
+
+  var selectedMonth = currentMonthAbbr(); // default: current calendar month
+
+  // ---------------------------------------------------------------
+  // Icons (inline SVG, currentColor so they inherit CSS colors)
+  // ---------------------------------------------------------------
+  var ICONS = {
+    check:
+      '<svg viewBox="0 0 16 16" width="12" height="12" fill="none"><path d="M3 8.5L6.2 11.5L13 4.5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    calendar:
+      '<svg viewBox="0 0 16 16" width="13" height="13" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M2 6.5H14" stroke="currentColor" stroke-width="1.3"/><path d="M5 1.5V4M11 1.5V4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
+    gift:
+      '<svg viewBox="0 0 16 16" width="13" height="13" fill="none"><rect x="2" y="6.5" width="12" height="7" rx="1" stroke="currentColor" stroke-width="1.3"/><path d="M2 6.5H14" stroke="currentColor" stroke-width="1.3"/><path d="M8 6.5V14" stroke="currentColor" stroke-width="1.3"/><path d="M8 6.5C8 6.5 5.5 6.5 5 4.8C4.6 3.4 5.7 2.5 6.6 2.9C7.6 3.4 8 6.5 8 6.5Z" stroke="currentColor" stroke-width="1.3"/><path d="M8 6.5C8 6.5 10.5 6.5 11 4.8C11.4 3.4 10.3 2.5 9.4 2.9C8.4 3.4 8 6.5 8 6.5Z" stroke="currentColor" stroke-width="1.3"/></svg>',
+    search:
+      '<svg viewBox="0 0 16 16" width="14" height="14" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.4"/><path d="M13 13L10.5 10.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+    chevron:
+      '<svg viewBox="0 0 12 12" width="10" height="10" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    help:
+      '<svg viewBox="0 0 16 16" width="13" height="13" fill="none"><circle cx="8" cy="8" r="6.3" stroke="currentColor" stroke-width="1.3"/><path d="M6.2 6.2C6.2 5.1 7 4.4 8 4.4C9 4.4 9.8 5.1 9.8 6C9.8 7 8.9 7.3 8.4 7.8C8.1 8.1 8 8.4 8 8.9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="11.2" r="0.75" fill="currentColor"/></svg>'
+  };
+
+  // ---------------------------------------------------------------
+  // Styles
+  // ---------------------------------------------------------------
+  var CSS = [
+    '.gt-widget{font-family:inherit;margin:60px 35px 60px 25px;',
+    'background:#fff;border-radius:16px;padding:24px 28px 20px;box-sizing:border-box;color:#1A1D23;}',
+    '.gt-widget *{box-sizing:border-box;}',
+    '.gt-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}',
+    '.gt-title{font-size:20px;font-weight:700;margin:0;color:#1A1D23;}',
+    '.gt-help{display:flex;align-items:center;gap:6px;color:#2E2F32;font-weight:600;font-size:12px;line-height:14px;cursor:pointer;text-decoration-line:underline;text-decoration-style:solid;text-decoration-offset:0%;text-decoration-thickness:0%;text-decoration-skip-ink:auto;}',
+    '.gt-controls{display:flex;align-items:flex-end;gap:20px;margin-bottom:16px;flex-wrap:wrap;}',
+    '.gt-field{display:flex;flex-direction:column;gap:6px;}',
+    '.gt-field label{font-size:11px;color:#8A8F98;font-weight:600;}',
+    '.gt-select{display:flex;align-items:center;gap:10px;border:1px solid #E5E7EB;border-radius:8px;padding:9px 12px;font-size:13px;font-weight:600;color:#1A1D23;background:#fff;cursor:pointer;min-width:110px;justify-content:space-between;}',
+    '.gt-select svg{color:#8A8F98;flex-shrink:0;}',
+    '.gt-select-wrap{position:relative;}',
+    '.gt-select-panel{position:absolute;top:calc(100% + 8px);left:0;width:100%;background:#fff;border-radius:16px;box-shadow:0px 4px 24px rgba(39,39,39,0.16);padding:10px 0;z-index:20;display:none;}',
+    '.gt-select-panel.open{display:block;}',
+    '.gt-select-option{padding:10px 12px;font-size:14px;font-weight:500;color:#8A8F98;cursor:pointer;text-align:center;}',
+    '.gt-select-option:hover{background:#F5F3FA;}',
+    '.gt-select-option.selected{color:#1A1D23;font-weight:700;}',
+    '.gt-month-panel{position:absolute;top:calc(100% + 8px);left:0;min-width:260px;background:#fff;border-radius:16px;box-shadow:0px 4px 24px rgba(39,39,39,0.16);padding:16px;z-index:20;display:none;}',
+    '.gt-month-panel.open{display:block;}',
+    '.gt-month-panel-title{font-size:13px;font-weight:600;color:#1A1D23;margin-bottom:12px;}',
+    '.gt-month-grid{display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;}',
+    '.gt-month-btn{border:1px solid #E5E7EB;border-radius:8px;background:#fff;color:#1A1D23;font-size:13px;font-weight:500;padding:8px 0;cursor:pointer;}',
+    '.gt-month-btn:hover{background:#F5F3FA;}',
+    '.gt-month-btn.selected{border-color:#6C4CD9;background:#F5F3FA;color:#512B8B;font-weight:700;}',
+    '.gt-search{flex:1;min-width:220px;display:flex;align-items:center;gap:8px;border:1px solid #E5E7EB;border-radius:8px;padding:9px 12px;color:#8A8F98;}',
+    '.gt-search input{border:none;outline:none;font-size:13px;flex:1;color:#1A1D23;background:transparent;}',
+    '.gt-search input::placeholder{color:#B0B4BC;}',
+    '.gt-updated{margin-left:auto;font-size:12px;color:#8A8F98;white-space:nowrap;}',
+    '.gt-updated b{color:#1A1D23;font-weight:700;}',
+    '.gt-list{display:flex;flex-direction:column;gap:14px;}',
+    '.gt-card{border:1px solid #ECEDF0;border-top:1px solid #EDEDED;border-radius:12px;padding:18px 20px;background:#fff;box-shadow:0px 1px 12px 0px #27272714;}',
+    '.gt-card-top{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#8A8F98;margin-bottom:6px;}',
+    '.gt-card-id{display:flex;align-items:center;gap:6px;font-weight:600;font-size:12px;line-height:15px;letter-spacing:0.25px;color:#75787B;}',
+    '.gt-card-date{display:flex;align-items:center;gap:6px;font-weight:600;font-size:12px;line-height:14px;letter-spacing:0px;color:#75787B;}',
+    '.gt-card-title{font-size:15px;margin:0 0 16px;color:#1A1D23;}',
+    '.gt-card-title b{font-weight:700;font-size:16px;line-height:22px;color:#1E1F23;}',
+    '.gt-card-title .gt-scheme{color:#75787B;font-weight:400;font-size:14px;line-height:16.5px;margin-left:10px;padding-left:10px;border-left:1px solid #E4E4E7;}',
+    '.gt-timeline{display:flex!important;flex-direction:column;width:100%!important;}',
+    '.gt-dot-track{display:flex!important;align-items:center;width:95%!important;}',
+    '.gt-dot{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:0 0 20px!important;z-index:1;}',
+    '.gt-dot.done{background:#512B8B;box-shadow:0px 0px 0px 3px #512B8B1F;}',
+    '.gt-dot.failed{background:#E0393F;}',
+    '.gt-dot.pending{background:#fff;border:2px solid #D8DAE0;}',
+    '.gt-line{height:2px;flex:1 1 0%!important;background:#D8DAE0;min-width:0;}',
+    '.gt-line.done{height:4px;border-radius:16777200px;opacity:1;background:linear-gradient(90deg, #512B8B 0%, #542D8F 7.14%, #573092 14.29%, #5A3296 21.43%, #5D3599 28.57%, #60379D 35.71%, #6339A1 42.86%, #663CA4 50%, #693EA8 57.14%, #6C41AB 64.29%, #6F43AF 71.43%, #7246B3 78.57%, #7648B7 85.71%, #794BBA 92.86%, #7C4DBE 100%);}',
+    '.gt-label-row{display:flex!important;width:100%!important;margin-top:8px;}',
+    '.gt-step-label{flex:1 1 0%!important;min-width:0!important;}',
+    '.gt-step-label:last-child{text-align:right;padding-right:20px;}',
+    '.gt-label{font-size:13px;font-weight:700;margin:0;overflow-wrap:break-word;word-break:break-word;}',
+    '.gt-label.done{color:#512B8B;font-weight:600;font-size:14px;line-height:14px;}',
+    '.gt-label.failed{color:#E0393F;}',
+    '.gt-label.pending{color:#B0B2B8;font-weight:600;font-size:14px;line-height:14px;}',
+    '.gt-sub{color:#75787B;font-weight:400;font-size:12px;line-height:14px;margin-top:2px;overflow-wrap:break-word;word-break:break-word;}',
+    '.gt-sub.failed-link{color:#E0393F;text-decoration:underline;cursor:pointer;}',
+    '.gt-more{text-align:center;margin-top:18px;}',
+    '.gt-more button{border:none;background:none;color:#512B8B;font-weight:700;font-size:14px;line-height:21px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:6px 10px;}',
+    '.gt-card.gt-hidden{display:none;}',
+    '.gt-state{padding:32px 8px;text-align:center;color:#75787B;font-size:13px;}',
+    '.gt-state.gt-error{color:#E0393F;}',
+    '@media(max-width:640px){.gt-controls{flex-direction:column;align-items:stretch;}.gt-updated{margin-left:0;}}'
+  ].join('');
+
+  function injectStyles() {
+    if (document.getElementById(STYLE_ID)) return;
+    var style = document.createElement('style');
+    style.id = STYLE_ID;
+    style.textContent = CSS;
+    document.head.appendChild(style);
+  }
+
+  // ---------------------------------------------------------------
+  // CSV parsing (RFC4180-ish: handles quoted fields, embedded commas,
+  // embedded newlines, "" as an escaped quote, and a leading BOM).
+  // ---------------------------------------------------------------
+  function parseCSV(text) {
+    var rows = [];
+    var row = [];
+    var field = '';
+    var inQuotes = false;
+    var i = text.charCodeAt(0) === 0xFEFF ? 1 : 0;
+    var len = text.length;
+
+    for (; i < len; i++) {
+      var c = text.charAt(i);
+
+      if (inQuotes) {
+        if (c === '"') {
+          if (text.charAt(i + 1) === '"') {
+            field += '"';
+            i++;
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          field += c;
+        }
+        continue;
+      }
+
+      if (c === '"') {
+        inQuotes = true;
+      } else if (c === ',') {
+        row.push(field);
+        field = '';
+      } else if (c === '\n') {
+        row.push(field);
+        rows.push(row);
+        row = [];
+        field = '';
+      } else if (c === '\r') {
+        // swallow; \n (or end of text) closes the row
+      } else {
+        field += c;
+      }
+    }
+
+    if (field.length > 0 || row.length > 0) {
+      row.push(field);
+      rows.push(row);
+    }
+
+    return rows;
+  }
+
+  // ---------------------------------------------------------------
+  // Dealer code helpers
+  // ---------------------------------------------------------------
+  function stripLeadingZeros(value) {
+    var trimmed = String(value == null ? '' : value).trim();
+    var stripped = trimmed.replace(/^0+/, '');
+    return stripped.length ? stripped : (trimmed.length ? '0' : '');
+  }
+
+  function readDealerCodeFromDom() {
+    var el = document.getElementById(DEALER_CODE_ELEMENT_ID);
+    if (!el) return '';
+    return (el.textContent || '').trim();
+  }
+
+  function waitForDealerCode() {
+    return new Promise(function (resolve) {
+      var existing = readDealerCodeFromDom();
+      if (existing) {
+        resolve(existing);
+        return;
+      }
+      var observer = new MutationObserver(function () {
+        var value = readDealerCodeFromDom();
+        if (value) {
+          observer.disconnect();
+          resolve(value);
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    });
+  }
+
+  // ---------------------------------------------------------------
+  // Data loading: fetch CSV, filter by dealer code, map to GIFTS
+  // ---------------------------------------------------------------
+  function cell(row, index) {
+    var v = row[index];
+    return v == null ? '' : String(v).trim();
+  }
+
+  function buildStepsFromRow(row) {
+    var rmApprovalDate = cell(row, COL.RM_APPROVAL_DATE);
+    var poDate = cell(row, COL.PO_DATE);
+    var dispatchDate = cell(row, COL.DISPATCH_DATE);
+    var deliveryStatus = cell(row, COL.DELIVERY_STATUS);
+    var isDelivered = /delivered/i.test(deliveryStatus);
+
+    return [
+      { label: 'Approved', date: rmApprovalDate, status: rmApprovalDate ? 'done' : 'pending' },
+      { label: 'PO Raised', date: poDate, status: poDate ? 'done' : 'pending' },
+      { label: 'Dispatched', date: dispatchDate, status: dispatchDate ? 'done' : 'pending' },
+      { label: 'Delivered', date: deliveryStatus, status: isDelivered ? 'done' : 'pending' }
+    ];
+  }
+
+  function fetchCsvText() {
+    // Not called while RAW_ROWS is embedded — retained for switching
+    // back to a live fetch once the CSV's domain is CSP-allowed.
+    return fetch(CSV_URL, { credentials: 'same-origin' }).then(function (res) {
+      if (!res.ok) {
+        throw new Error('Failed to load gift data (HTTP ' + res.status + ')');
+      }
+      return res.text();
+    });
+  }
+
+  function rowMonthAbbr(r) {
+    // Column B looks like "Aug-25" — the part before the dash is the
+    // month abbreviation the Month filter matches against.
+    var raw = cell(r, COL.DATE);
+    return raw.split('-')[0].trim();
+  }
+
+  function filterAndMap(rows, dealerCode, fy, monthAbbr) {
+    return rows
+      .filter(function (r) {
+        return r.length > COL.DEALER &&
+          stripLeadingZeros(r[COL.DEALER]) === dealerCode &&
+          cell(r, COL.PR_YEAR) === fy &&
+          rowMonthAbbr(r).toLowerCase() === monthAbbr.toLowerCase();
+      })
+      .map(function (r) {
+        return {
+          giftId: cell(r, COL.GIFT_ID),
+          month: cell(r, COL.DATE),
+          productName: cell(r, COL.TITLE),
+          scheme: cell(r, COL.SCHEME),
+          steps: buildStepsFromRow(r)
+        };
+      });
+  }
+
+  // Re-filters RAW_ROWS using the currently-known dealer code and
+  // whatever Financial Year / Month are selected. Called on first
+  // load and again whenever either dropdown selection changes.
+  function applyFilters() {
+    GIFTS = filterAndMap(RAW_ROWS, currentDealerCode, selectedFY, selectedMonth);
+    return GIFTS;
+  }
+
+  function loadGifts() {
+    return waitForDealerCode().then(function (rawDealerCode) {
+      currentDealerCode = stripLeadingZeros(rawDealerCode);
+      return applyFilters();
+    });
+  }
+
+  // ---------------------------------------------------------------
+  // Markup builders
+  // ---------------------------------------------------------------
+  // Dots + connecting lines live in one flat flex row (gt-dot-track):
+  // dots are fixed 20px, lines are flex:1 and share the remaining
+  // width equally, so the 3 segments are always the same length and
+  // the last dot always lands exactly on the row's right edge — none
+  // of that depends on how long any label/date text is. Labels are a
+  // separate row underneath (gt-label-row), 4 equal columns, with the
+  // last one right-aligned so it reads flush with the last dot.
+  function buildDotTrack(steps) {
+    return steps
+      .map(function (step, i) {
+        var isLast = i === steps.length - 1;
+        var dotInner = step.status === 'done' ? ICONS.check : '';
+        var dotHtml = '<div class="gt-dot ' + step.status + '">' + dotInner + '</div>';
+        if (isLast) return dotHtml;
+        var nextIsFilled = steps[i + 1].status === 'done' || steps[i + 1].status === 'failed';
+        var lineClass = nextIsFilled ? 'gt-line done' : 'gt-line';
+        return dotHtml + '<div class="' + lineClass + '"></div>';
+      })
+      .join('');
+  }
+
+  function buildLabelRow(steps) {
+    return steps
+      .map(function (step) {
+        var sub = '';
+        if (step.status === 'failed') {
+          sub = '<div class="gt-sub failed-link">' + step.date + '</div>';
+        } else if (step.date) {
+          sub = '<div class="gt-sub">' + step.date + '</div>';
+        }
+        return (
+          '<div class="gt-step-label">' +
+            '<div class="gt-label ' + step.status + '">' + step.label + '</div>' +
+            sub +
+          '</div>'
+        );
+      })
+      .join('');
+  }
+
+  function buildSteps(steps) {
+    return (
+      '<div class="gt-dot-track">' + buildDotTrack(steps) + '</div>' +
+      '<div class="gt-label-row">' + buildLabelRow(steps) + '</div>'
+    );
+  }
+
+  function buildCard(gift, index) {
+    var hiddenClass = index >= VISIBLE_COUNT ? ' gt-hidden' : '';
+    return (
+      '<div class="gt-card' + hiddenClass + '" data-index="' + index + '">' +
+        '<div class="gt-card-top">' +
+          '<div class="gt-card-id">' + ICONS.gift + '<span>Gift ID : ' + gift.giftId + '</span></div>' +
+          '<div class="gt-card-date">' + ICONS.calendar + '<span>' + gift.month + '</span></div>' +
+        '</div>' +
+        '<p class="gt-card-title"><b>' + gift.productName + '</b><span class="gt-scheme">Scheme : ' + gift.scheme + '</span></p>' +
+        '<div class="gt-timeline">' + buildSteps(gift.steps) + '</div>' +
+      '</div>'
+    );
+  }
+
+  function buildListSection() {
+    if (!GIFTS.length) {
+      return '<div class="gt-state">No gifts found for this dealer.</div>';
+    }
+    var cardsHtml = GIFTS.map(buildCard).join('');
+    var hasMore = GIFTS.length > VISIBLE_COUNT;
+    return (
+      '<div class="gt-list">' + cardsHtml + '</div>' +
+      (hasMore ? '<div class="gt-more"><button type="button" data-expanded="false">Show more ' + ICONS.chevron + '</button></div>' : '')
+    );
+  }
+
+  function buildFySelect() {
+    var selectedOption = FY_OPTIONS.filter(function (o) { return o.value === selectedFY; })[0] || FY_OPTIONS[FY_OPTIONS.length - 1];
+    var optionsHtml = FY_OPTIONS
+      .map(function (o) {
+        var selectedClass = o.value === selectedFY ? ' selected' : '';
+        return '<div class="gt-select-option' + selectedClass + '" data-fy="' + o.value + '">' + o.label + '</div>';
+      })
+      .join('');
+    return (
+      '<div class="gt-field">' +
+        '<label>Financial Year</label>' +
+        '<div class="gt-select-wrap">' +
+          '<div class="gt-select" data-fy-trigger><span>' + selectedOption.label + '</span>' + ICONS.chevron + '</div>' +
+          '<div class="gt-select-panel" data-fy-panel>' + optionsHtml + '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function buildMonthSelect() {
+    var selectedOption = MONTH_OPTIONS.filter(function (o) { return o.abbr === selectedMonth; })[0] || MONTH_OPTIONS[0];
+    var buttonsHtml = MONTH_OPTIONS
+      .map(function (o) {
+        var selectedClass = o.abbr === selectedMonth ? ' selected' : '';
+        return '<button type="button" class="gt-month-btn' + selectedClass + '" data-month="' + o.abbr + '">' + o.abbr + '</button>';
+      })
+      .join('');
+    return (
+      '<div class="gt-field">' +
+        '<label>Month</label>' +
+        '<div class="gt-select-wrap">' +
+          '<div class="gt-select" data-month-trigger><span>' + selectedOption.full + '</span>' + ICONS.chevron + '</div>' +
+          '<div class="gt-month-panel" data-month-panel>' +
+            '<div class="gt-month-panel-title">Select Month</div>' +
+            '<div class="gt-month-grid">' + buttonsHtml + '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function buildWidget(innerHtml) {
+    return (
+      '<div class="gt-widget">' +
+        '<div class="gt-header">' +
+          '<h2 class="gt-title">Gift Tracking</h2>' +
+          '<a class="gt-help" href="javascript:void(0)">' + ICONS.help + ' Raise a Compliant</a>' +
+        '</div>' +
+        '<div class="gt-controls">' +
+          buildFySelect() +
+          buildMonthSelect() +
+          '<div class="gt-search">' + ICONS.search + '<input type="text" placeholder="Search for a scheme or gift" /></div>' +
+          '<div class="gt-updated">Last updated: <b>' + LAST_UPDATED + '</b></div>' +
+        '</div>' +
+        innerHtml +
+      '</div>'
+    );
+  }
+
+  // ---------------------------------------------------------------
+  // Behaviour
+  // ---------------------------------------------------------------
+  function attachBehaviour(host) {
+    var moreBtn = host.querySelector('.gt-more button');
+    if (moreBtn) {
+      moreBtn.addEventListener('click', function () {
+        var hiddenCards = host.querySelectorAll('.gt-card.gt-hidden');
+        hiddenCards.forEach(function (card) {
+          card.classList.remove('gt-hidden');
+        });
+        moreBtn.closest('.gt-more').remove();
+      });
+    }
+
+    var searchInput = host.querySelector('.gt-search input');
+    if (searchInput) {
+      searchInput.addEventListener('input', function () {
+        var query = searchInput.value.trim().toLowerCase();
+        host.querySelectorAll('.gt-card').forEach(function (card, i) {
+          var gift = GIFTS[i];
+          if (!gift) return;
+          var matches =
+            !query ||
+            gift.giftId.toLowerCase().indexOf(query) !== -1 ||
+            gift.scheme.toLowerCase().indexOf(query) !== -1;
+          card.style.display = matches ? '' : 'none';
+        });
+      });
+    }
+
+    var fyTrigger = host.querySelector('[data-fy-trigger]');
+    var fyPanel = host.querySelector('[data-fy-panel]');
+    if (fyTrigger && fyPanel) {
+      fyTrigger.addEventListener('click', function (e) {
+        e.stopPropagation();
+        fyPanel.classList.toggle('open');
+      });
+      fyPanel.querySelectorAll('.gt-select-option').forEach(function (opt) {
+        opt.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var fy = opt.getAttribute('data-fy');
+          fyPanel.classList.remove('open');
+          if (fy && fy !== selectedFY) {
+            selectedFY = fy;
+            applyFilters();
+            renderList(host);
+          }
+        });
+      });
+    }
+
+    var monthTrigger = host.querySelector('[data-month-trigger]');
+    var monthPanel = host.querySelector('[data-month-panel]');
+    if (monthTrigger && monthPanel) {
+      monthTrigger.addEventListener('click', function (e) {
+        e.stopPropagation();
+        monthPanel.classList.toggle('open');
+      });
+      monthPanel.querySelectorAll('.gt-month-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var month = btn.getAttribute('data-month');
+          monthPanel.classList.remove('open');
+          if (month && month !== selectedMonth) {
+            selectedMonth = month;
+            applyFilters();
+            renderList(host);
+          }
+        });
+      });
+    }
+  }
+
+  // Closes any open Financial Year / Month dropdown on an outside
+  // click. Installed once (in start()) rather than per-render, since
+  // host itself is never replaced — only its innerHTML is re-rendered.
+  function attachOutsideClickClose(host) {
+    document.addEventListener('click', function (e) {
+      if (!host.isConnected) return;
+      [
+        { panel: '[data-fy-panel]', trigger: '[data-fy-trigger]' },
+        { panel: '[data-month-panel]', trigger: '[data-month-trigger]' }
+      ].forEach(function (pair) {
+        var panel = host.querySelector(pair.panel);
+        var trigger = host.querySelector(pair.trigger);
+        if (panel && panel.classList.contains('open') && !panel.contains(e.target) && !(trigger && trigger.contains(e.target))) {
+          panel.classList.remove('open');
+        }
+      });
+    });
+  }
+
+  // ---------------------------------------------------------------
+  // Mount
+  // ---------------------------------------------------------------
+  function renderLoading(host) {
+    injectStyles();
+    host.innerHTML = buildWidget('<div class="gt-state">Loading gift data…</div>');
+  }
+
+  function renderError(host, err) {
+    injectStyles();
+    host.innerHTML = buildWidget('<div class="gt-state gt-error">Couldn’t load gift data. ' + (err && err.message ? err.message : 'Please try again later.') + '</div>');
+  }
+
+  function renderList(host) {
+    injectStyles();
+    host.innerHTML = buildWidget(buildListSection());
+    attachBehaviour(host);
+  }
+
+  function start(host) {
+    renderLoading(host);
+    attachOutsideClickClose(host);
+    loadGifts()
+      .then(function () {
+        renderList(host);
+      })
+      .catch(function (err) {
+        renderError(host, err);
+      });
+  }
+
+  function init() {
+    var host = document.querySelector(HOST_SELECTOR);
+    if (host) {
+      start(host);
+      return;
+    }
+    // Angular may not have rendered the host element yet — watch for it.
+    var observer = new MutationObserver(function () {
+      var el = document.querySelector(HOST_SELECTOR);
+      if (el) {
+        observer.disconnect();
+        start(el);
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  init();
+})();
