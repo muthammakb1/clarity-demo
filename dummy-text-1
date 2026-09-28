@@ -1,133 +1,34 @@
-var checkAllElementInterval = setInterval(function () {
-    let formElement = document.querySelector(".ccforms.blog-details-right-ccforms-wp.aem-GridColumn.aem-GridColumn--default--4");
-    if (formElement) {
-        if ($(window).width() > 991) {
-            formElement.style.position = "sticky";
-            formElement.style.top = "72px";
-            formElement.style.zIndex  = "1060";
-        }
-    }
-
-	document.querySelectorAll(
-  '.blog-details-right-ccforms-wp .formVerticalVariant .form-revamp-vertical .form-global-revamp .form-text-input__field'
-).forEach(el => {
-  el.style.setProperty('height', '40px', 'important');
-});
-
-document.querySelectorAll(
-  '.blog-details-right-ccforms-wp .formVerticalVariant.vertical-whitevariant.white-landingPageClosedForm .formVerticalVariantContainer'
-).forEach(el => {
-  el.style.setProperty('width', '300px', 'important');
-  el.style.setProperty('padding', '6px 4%', 'important');
-  el.style.setProperty('border-radius', '0', 'important');
-  el.style.setProperty('border', '1px solid #e5e3e7', 'important');
-});
-
-document.querySelectorAll(
-  '.blog-details-right-ccforms-wp .formVerticalVariant.vertical-whitevariant.white-landingPageClosedForm .formVerticalVariantContainer .formVerticalLeft .formVerticalLeftContent .formVerticalLeftPara'
-).forEach(el => {
-  el.style.setProperty('padding', '8px 1%', 'important');
-});
-
-document.querySelectorAll('.blog-details-right-ccforms-wp').forEach(el => {
-  el.style.setProperty('border', '0', 'important');
-  el.style.setProperty('transform', 'scale(0.9)', 'important');
-});
-    // ----------sticky code end ------///////
-
-    var popularSectionInterval = setInterval(function () {
-        let popularSection = document.querySelector(".popular-this-week");
-        let targetSection = document.querySelectorAll(".blog-details-full-width-layout-wrapper")[1];
-        let popularHeading = document.querySelector(".popular-this-week h4")
-        if (popularSection && targetSection) {
-            targetSection.appendChild(popularSection);
-
-            let titleContainer = document.createElement("div");
-            titleContainer.style.cssText = "display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: -15px;";
-
-            if (popularHeading) {
-                popularHeading.style.cssText = "font-size: 14px; font-weight: bold; color: #222; margin: 0;";
-                titleContainer.appendChild(popularHeading);
-            }
-
-            let viewMoreLink = document.createElement("a");
-            viewMoreLink.id = "viewMore";
-            viewMoreLink.href = "https://www.asianpaints.com/blogs.html";
-            viewMoreLink.setAttribute("target", "_blank")
-            viewMoreLink.innerText = "VIEW MORE";
-            viewMoreLink.style.cssText = "font-size: 12px; font-weight: bold; text-decoration: underline; color: #000; cursor: pointer; margin-right: 2%;";
-
-            titleContainer.appendChild(viewMoreLink);
-            popularSection.prepend(titleContainer);
-
-            popularSection.style.cssText = "display: flex; flex-direction: column; align-items: center; position: relative; padding: 35px 20px 30px; margin: 1% 27%; width: 46%; border: none;";
-
-            clearInterval(popularSectionInterval);
-        }
-    })
-
-
-
-    let popularContentWrap = document.querySelector(".popular-this-week--contentWrap");
-    if (popularContentWrap) {
-        popularContentWrap.style.cssText = "display: flex; flex-direction: row; gap: 5px; overflow-x: auto; white-space: nowrap; ";
-    }
-
-    document.querySelectorAll(".popular-this-week--contentWrap > a").forEach(item => {
-        item.style.cssText = "display: flex; flex-direction: column; align-items: center; text-align: center; gap: 5px; margin-bottom: unset !important;border-bottom:none !important";
-    });
-
-    document.querySelectorAll(".popular-this-week--contentText").forEach(textItem => {
-        textItem.style.cssText = "margin-top: 5px; font-size: 14px; color: #222; width: 100%; overflow-wrap: break-word; text-align: left; display: block; white-space: normal;";
-    });
-
-    document.querySelectorAll(".popular-this-week--contentText > p").forEach(textItem => {
-        textItem.style.fontSize = "11px";
-    });
-    document.querySelectorAll(".popular-this-week--contentWrap__content  p")[1].style.marginLeft = "3%";
-
-    document.querySelectorAll(".popular-this-week--image img").forEach(image => {
-        let originalUrl = image.src;
-        let cleanUrl = originalUrl.split(".png")[0];
-        image.src = cleanUrl;
-        image.style.cssText = "object-fit: cover; border-radius: 1px; width: 230px; height: 220px;";
-    });
-
-
-    var viewMoreInterval = setInterval(function () {
-        if (document.querySelector("body > div.root.responsivegrid.cc-global > div > div.responsivegrid.padding-bottom-medium70.blog-details-page-wrapper.aem-GridColumn.aem-GridColumn--default--12 > div > div:nth-child(2) > div.popular-this-week > div:nth-child(1) > a")) {
-            let viewMode = document.querySelector("body > div.root.responsivegrid.cc-global > div > div.responsivegrid.padding-bottom-medium70.blog-details-page-wrapper.aem-GridColumn.aem-GridColumn--default--12 > div > div:nth-child(2) > div.popular-this-week > div:nth-child(1) > a");
-            let popular = document.querySelector("body > div.root.responsivegrid.cc-global > div > div.responsivegrid.padding-bottom-medium70.blog-details-page-wrapper.aem-GridColumn.aem-GridColumn--default--12 > div > div:nth-child(2) > div.popular-this-week > h4");
-
-            viewMode.insertAdjacentElement("beforebegin", popular);
-            clearInterval(viewMoreInterval);
-        }
-    })
-
-    var veiemorebottomcta = setInterval(function () {
-        if (document.querySelector(".popular-this-week .linkBtn")) {
-            document.querySelector(".popular-this-week .linkBtn").style.display = "none";
-            clearInterval(veiemorebottomcta);
-        }
-    })
-
-
-
-    document.querySelectorAll(".popular-this-week--image picture").forEach(picture => {
-        let imgSource = picture.querySelector("img") || picture.querySelector("source");
-        if (imgSource) {
-            let originalSrc = imgSource.getAttribute("src") || imgSource.getAttribute("srcset");
-            let cleanSrc = originalSrc.split(".png")[0];
-            let newImg = document.createElement("img");
-            newImg.src = cleanSrc;
-            newImg.alt = imgSource.getAttribute("alt") || "Popular Image";
-            newImg.title = imgSource.getAttribute("title") || "Popular Image";
-            newImg.style.width = "200px";
-            newImg.style.height = "auto";
-            newImg.style.objectFit = "cover";
-            newImg.style.borderRadius = "1px";
-            picture.parentNode.replaceChild(newImg, picture);
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/4.0.0/jquery.min.js"></script>
+<script>
+$(document).ready(function () {
+    const $window = $(window);
+    let popupTriggered = false;
+ 
+    $window.on("scroll", function () {
+        const scrollTop = $window.scrollTop();
+        const documentHeight = $(document).height();
+        const windowHeight = $window.height();
+ 
+        const scrollPercent = (scrollTop / (documentHeight - windowHeight)) * 100;
+ 
+        if (scrollPercent > 50 && !popupTriggered) {
+ 
+            popupTriggered = true;
+ 
+                const triggerBtn = $('.trigger-book-free-site-visit-modal')[0];
+                if (triggerBtn) {
+                    triggerBtn.click();
+                }
+                if ($('.root.responsivegrid').length) {
+                    var dl = ccAnalytics.getAdobeBasePayload ? ccAnalytics.getAdobeBasePayload() : apDataLayer();
+                }
+                else {
+                    var dl = getAdobeBasePayload ? getAdobeBasePayload() : apDataLayer();
+                }
+                dl.event = "exit_intent_impression";
+                window.adobeDataLayer = window.adobeDataLayer || [];
+                window.adobeDataLayer.push(dl);
         }
     });
-    clearInterval(checkAllElementInterval);
 });
+</script>
