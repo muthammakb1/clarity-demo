@@ -1,34 +1,51 @@
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/4.0.0/jquery.min.js"></script>
 <script>
-$(document).ready(function () {
-    const $window = $(window);
-    let popupTriggered = false;
- 
-    $window.on("scroll", function () {
-        const scrollTop = $window.scrollTop();
-        const documentHeight = $(document).height();
-        const windowHeight = $window.height();
- 
-        const scrollPercent = (scrollTop / (documentHeight - windowHeight)) * 100;
- 
-        if (scrollPercent > 50 && !popupTriggered) {
- 
-            popupTriggered = true;
- 
-                const triggerBtn = $('.trigger-book-free-site-visit-modal')[0];
-                if (triggerBtn) {
-                    triggerBtn.click();
-                }
-                if ($('.root.responsivegrid').length) {
-                    var dl = ccAnalytics.getAdobeBasePayload ? ccAnalytics.getAdobeBasePayload() : apDataLayer();
-                }
-                else {
-                    var dl = getAdobeBasePayload ? getAdobeBasePayload() : apDataLayer();
-                }
-                dl.event = "exit_intent_impression";
-                window.adobeDataLayer = window.adobeDataLayer || [];
-                window.adobeDataLayer.push(dl);
-        }
+(function () {
+  function init($) {
+    $(function () {
+      var $window = $(window);
+      var popupTriggered = false;
+
+      $window.on("scroll.exitIntent", function () {
+        var scrollable = $(document).height() - $window.height();
+        if (scrollable <= 0) return;
+
+        var scrollPercent = ($window.scrollTop() / scrollable) * 100;
+        if (scrollPercent <= 50 || popupTriggered) return;
+
+        popupTriggered = true;
+        $window.off("scroll.exitIntent");
+
+        var triggerBtn = $(".trigger-book-free-site-visit-modal")[0];
+        if (triggerBtn) triggerBtn.click();
+
+        var dl;
+        try {
+          if ($(".root.responsivegrid").length &&
+              window.ccAnalytics && typeof ccAnalytics.getAdobeBasePayload === "function") {
+            dl = ccAnalytics.getAdobeBasePayload();
+          } else if (typeof window.getAdobeBasePayload === "function") {
+            dl = window.getAdobeBasePayload();
+          } else if (typeof window.apDataLayer === "function") {
+            dl = window.apDataLayer();
+          }
+        } catch (e) {}
+
+        dl = dl || {};
+        dl.event = "exit_intent_impression";
+        window.adobeDataLayer = window.adobeDataLayer || [];
+        window.adobeDataLayer.push(dl);
+      });
     });
-});
+  }
+
+  // Reuse the page's jQuery if present; otherwise load it and wait
+  if (window.jQuery) {
+    init(window.jQuery);
+  } else {
+    var s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/jquery/4.0.0/jquery.min.js";
+    s.onload = function () { init(window.jQuery); };
+    document.head.appendChild(s);
+  }
+})();
 </script>
